@@ -36,7 +36,8 @@
       "Bash(lsof:*)",
       "Bash(kill:*)",
       "Bash(xargs kill:*)",
-      "Bash(ps:*)"
+      "Bash(ps:*)",
+      "Bash(head:*)"
     ]
   }
 }

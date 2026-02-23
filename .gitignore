@@ -10,6 +10,7 @@ coverage/
 .yarn/
 
 .claude/
+.claude/settings.local.json
 
 .playwright-mcp/
 .vite/
