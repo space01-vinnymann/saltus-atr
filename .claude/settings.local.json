@@ -18,7 +18,24 @@
       "Bash(yarn test)",
       "Bash(npm install:*)",
       "Bash(npx vitest:*)",
-      "Bash(npx cdk synth:*)"
+      "Bash(npx cdk synth:*)",
+      "Bash(npx cdk deploy --require-approval never)",
+      "Bash(curl:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_console_messages",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(node -e:*)",
+      "Bash(yarn remove:*)",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_network_requests",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_run_code",
+      "mcp__playwright__browser_snapshot",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(xargs kill:*)"
     ]
   }
 }

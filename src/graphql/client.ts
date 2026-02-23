@@ -1,6 +1,18 @@
-import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink, Observable } from '@apollo/client'
-import { createAuthLink } from 'aws-appsync-auth-link'
-import { CognitoIdentityClient, GetIdCommand, GetCredentialsForIdentityCommand } from '@aws-sdk/client-cognito-identity'
+import {
+  ApolloClient,
+  InMemoryCache,
+  HttpLink,
+  ApolloLink,
+  Observable,
+} from '@apollo/client'
+import { SignatureV4 } from '@smithy/signature-v4'
+import { HttpRequest } from '@smithy/protocol-http'
+import { Sha256 } from '@aws-crypto/sha256-browser'
+import {
+  CognitoIdentityClient,
+  GetIdCommand,
+  GetCredentialsForIdentityCommand,
+} from '@aws-sdk/client-cognito-identity'
 import { getDefinition } from './mockLink'
 
 const url = import.meta.env.VITE_APPSYNC_ENDPOINT ?? ''
@@ -13,7 +25,6 @@ function createMockLink(): ApolloLink {
   return new ApolloLink((operation) => {
     return new Observable((observer) => {
       const result = getDefinition(operation)
-      // Simulate network delay
       setTimeout(() => {
         observer.next({ data: result })
         observer.complete()
@@ -39,17 +50,38 @@ function createAppSyncLink(): ApolloLink {
     }
   }
 
-  const authLink = createAuthLink({
-    url,
+  const signer = new SignatureV4({
+    service: 'appsync',
     region,
-    auth: {
-      type: 'AWS_IAM',
-      credentials: getCredentials,
-    },
+    credentials: getCredentials,
+    sha256: Sha256,
   })
 
-  const httpLink = createHttpLink({ uri: url })
-  return authLink.concat(httpLink)
+  const endpoint = new URL(url)
+
+  // Custom fetch that signs the exact request body Apollo produces
+  const signedFetch: typeof fetch = async (input, init) => {
+    const httpRequest = new HttpRequest({
+      method: init?.method ?? 'POST',
+      protocol: endpoint.protocol,
+      hostname: endpoint.hostname,
+      port: endpoint.port ? Number(endpoint.port) : undefined,
+      path: endpoint.pathname,
+      headers: {
+        'content-type': 'application/json',
+        host: endpoint.host,
+      },
+      body: init?.body as string,
+    })
+
+    const signed = await signer.sign(httpRequest)
+    return fetch(input, {
+      ...init,
+      headers: signed.headers,
+    })
+  }
+
+  return new HttpLink({ uri: url, fetch: signedFetch })
 }
 
 export const client = new ApolloClient({

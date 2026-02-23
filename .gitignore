@@ -6,3 +6,9 @@ cdk.out/
 .DS_Store
 *.js.map
 coverage/
+
+.yarn/
+
+.claude/
+
+.playwright-mcp/

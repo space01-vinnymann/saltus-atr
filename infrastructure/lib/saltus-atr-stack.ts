@@ -19,6 +19,14 @@ export class SaltusAtrStack extends cdk.Stack {
       encryption: s3.BucketEncryption.S3_MANAGED,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.GET],
+          allowedOrigins: ['*'],
+          allowedHeaders: ['*'],
+          maxAge: 3600,
+        },
+      ],
     })
 
     // Cognito Identity Pool (unauthenticated access for anonymous users)

@@ -35,6 +35,7 @@ export default function Results() {
   const [calculateRisk] = useMutation<CalculateRiskData>(CALCULATE_RISK)
   const [generatePdf] = useMutation<GeneratePdfData>(GENERATE_PDF)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
+  const [pdfError, setPdfError] = useState(false)
 
   // Guard: redirect if no questions loaded (e.g. direct page load)
   useEffect(() => {
@@ -77,6 +78,7 @@ export default function Results() {
   const handleDownloadPdf = async () => {
     if (!state.riskRating) return
     setDownloadingPdf(true)
+    setPdfError(false)
     try {
       const result = await generatePdf({
         variables: {
@@ -91,7 +93,7 @@ export default function Results() {
       const response = await axios.get(url, { responseType: 'blob' })
       saveAs(response.data as Blob, 'risk-results.pdf')
     } catch {
-      navigate('/error')
+      setPdfError(true)
     } finally {
       setDownloadingPdf(false)
     }
@@ -151,6 +153,12 @@ export default function Results() {
       >
         {downloadingPdf ? 'Downloading PDF...' : 'Download PDF'}
       </button>
+
+      {pdfError && (
+        <p className="mt-4 font-body text-sm text-coral">
+          Unable to download PDF. Please try again.
+        </p>
+      )}
     </div>
   )
 }
