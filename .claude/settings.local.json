@@ -15,7 +15,10 @@
       "Bash(timeout 8 yarn dev:*)",
       "Bash(yarn build:*)",
       "Bash(yarn lint)",
-      "Bash(yarn test)"
+      "Bash(yarn test)",
+      "Bash(npm install:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx cdk synth:*)"
     ]
   }
 }

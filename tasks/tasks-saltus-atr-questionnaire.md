@@ -188,23 +188,23 @@ After completing each parent task:
 
 ---
 
-- [ ] 4.0 CDK infrastructure & backend Lambdas — AppSync, Cognito, S3, getQuestions, calculateRisk
-  - [ ] 4.1 Create `infrastructure/` directory. Initialise a separate `package.json` with CDK dependencies: `aws-cdk-lib`, `constructs`, `@aws-cdk/aws-appsync-alpha` (or `aws-cdk-lib/aws-appsync`), `typescript`, `ts-node`, `esbuild`. Create `tsconfig.json` for the CDK project (target ES2022, module commonjs)
-  - [ ] 4.2 Create `infrastructure/bin/app.ts` — CDK app entry point. Instantiate the `SaltusAtrStack` with env from `CDK_DEFAULT_ACCOUNT` and `CDK_DEFAULT_REGION` (default to `eu-west-2`)
-  - [ ] 4.3 Create `infrastructure/lambda/getQuestions/data.ts` — export the hardcoded 13 questions as a typed array. Each question has `id` (number 1-13), `text` (question string), and `answers` (array of `{ id: number, text: string }` with IDs 1-5, or 1-3 for Q10). Data exactly matches PRD section 4.14
-  - [ ] 4.4 Create `infrastructure/lambda/getQuestions/index.ts` — Lambda handler. Import questions from `data.ts`. Transform each to `{ id: String(q.id), text: q.text, answers: q.answers.map(a => ({ id: String(a.id), text: a.text })) }`. Return the array. Wrap in try/catch — on error, log and throw a user-friendly error message
-  - [ ] 4.5 Create `infrastructure/lambda/calculateRisk/scoring.ts` — export a `calculateRiskScore(responses: Array<{questionId: string; responseId: string}>): number` function. Implements the scoring algorithm from PRD section 4.15: forward-scored questions (Q1,Q2,Q3,Q4,Q6,Q7,Q8) map responseId 1→5, 2→4, 3→3, 4→2, 5→1. Reverse-scored questions (Q5,Q11,Q13) map responseId 1→1, 2→2, 3→3, 4→4, 5→5. Q9: 1→1, 2→2, 3→3, 4→4, 5→5. Q10 (3 options): 1→1, 2→5, 3→3. Q12: 1→5, 2→4, 3→3, 4→2, 5→1. Average all 13 scores, `Math.round()`, clamp to [1,5]
-  - [ ] 4.6 Create `infrastructure/lambda/calculateRisk/scoring.test.ts` — test cases: all first-answers selected → expected rating; all last-answers selected → expected rating; mixed middle answers → rating 3; Q10 with only 3 options handled correctly; result is always an integer between 1 and 5; single-question edge case doesn't crash (even though real app always sends 13)
-  - [ ] 4.7 Create `infrastructure/lambda/calculateRisk/index.ts` — Lambda handler. Extract `responses` from `event.arguments.responses`. Call `calculateRiskScore(responses)`. Return `{ rating }`. Wrap in try/catch — on error, log and throw
-  - [ ] 4.8 Create `infrastructure/lib/saltus-atr-stack.ts` — single CDK Stack containing:
+- [x] 4.0 CDK infrastructure & backend Lambdas — AppSync, Cognito, S3, getQuestions, calculateRisk
+  - [x] 4.1 Create `infrastructure/` directory. Initialise a separate `package.json` with CDK dependencies: `aws-cdk-lib`, `constructs`, `@aws-cdk/aws-appsync-alpha` (or `aws-cdk-lib/aws-appsync`), `typescript`, `ts-node`, `esbuild`. Create `tsconfig.json` for the CDK project (target ES2022, module commonjs)
+  - [x] 4.2 Create `infrastructure/bin/app.ts` — CDK app entry point. Instantiate the `SaltusAtrStack` with env from `CDK_DEFAULT_ACCOUNT` and `CDK_DEFAULT_REGION` (default to `eu-west-2`)
+  - [x] 4.3 Create `infrastructure/lambda/getQuestions/data.ts` — export the hardcoded 13 questions as a typed array. Each question has `id` (number 1-13), `text` (question string), and `answers` (array of `{ id: number, text: string }` with IDs 1-5, or 1-3 for Q10). Data exactly matches PRD section 4.14
+  - [x] 4.4 Create `infrastructure/lambda/getQuestions/index.ts` — Lambda handler. Import questions from `data.ts`. Transform each to `{ id: String(q.id), text: q.text, answers: q.answers.map(a => ({ id: String(a.id), text: a.text })) }`. Return the array. Wrap in try/catch — on error, log and throw a user-friendly error message
+  - [x] 4.5 Create `infrastructure/lambda/calculateRisk/scoring.ts` — export a `calculateRiskScore(responses: Array<{questionId: string; responseId: string}>): number` function. Implements the scoring algorithm from PRD section 4.15: forward-scored questions (Q1,Q2,Q3,Q4,Q6,Q7,Q8) map responseId 1→5, 2→4, 3→3, 4→2, 5→1. Reverse-scored questions (Q5,Q11,Q13) map responseId 1→1, 2→2, 3→3, 4→4, 5→5. Q9: 1→1, 2→2, 3→3, 4→4, 5→5. Q10 (3 options): 1→1, 2→5, 3→3. Q12: 1→5, 2→4, 3→3, 4→2, 5→1. Average all 13 scores, `Math.round()`, clamp to [1,5]
+  - [x] 4.6 Create `infrastructure/lambda/calculateRisk/scoring.test.ts` — test cases: all first-answers selected → expected rating; all last-answers selected → expected rating; mixed middle answers → rating 3; Q10 with only 3 options handled correctly; result is always an integer between 1 and 5; single-question edge case doesn't crash (even though real app always sends 13)
+  - [x] 4.7 Create `infrastructure/lambda/calculateRisk/index.ts` — Lambda handler. Extract `responses` from `event.arguments.responses`. Call `calculateRiskScore(responses)`. Return `{ rating }`. Wrap in try/catch — on error, log and throw
+  - [x] 4.8 Create `infrastructure/lib/saltus-atr-stack.ts` — single CDK Stack containing:
     - S3 bucket (`SaltusATRPDFStore-{env}`): `blockPublicAccess: BlockPublicAccess.BLOCK_ALL`, `encryption: BucketEncryption.S3_MANAGED`
     - Cognito Identity Pool: `allowUnauthenticatedIdentities: true`, create an unauthenticated IAM role with AppSync invoke permissions
     - AppSync GraphQL API: `authorizationConfig` with IAM as default auth. Load schema from a `schema.graphql` file. Create Lambda data sources and resolvers for `getQuestions` (Query), `calculateRisk` (Mutation) — wire each to its respective Lambda function
     - Lambda functions for `getQuestions` and `calculateRisk`: Node.js 22.x runtime, bundled with esbuild via `NodejsFunction`, 256MB memory, 30s timeout
     - CDK Outputs: AppSync endpoint URL, AppSync region, Cognito Identity Pool ID (these are the values the frontend needs in `.env`)
-  - [ ] 4.9 Create `infrastructure/lib/schema.graphql` — the GraphQL schema from PRD section 4.9 (without `@function` directives — CDK wires resolvers separately)
-  - [ ] 4.10 Run scoring tests: `cd infrastructure && npx vitest run` (or set up a test script in infrastructure/package.json)
-  - [ ] 4.11 Run `cd infrastructure && npx cdk synth` — verify the CDK stack synthesises without errors. Do NOT deploy yet (that happens in task 6)
+  - [x] 4.9 Create `infrastructure/lib/schema.graphql` — the GraphQL schema from PRD section 4.9 (without `@function` directives — CDK wires resolvers separately)
+  - [x] 4.10 Run scoring tests: `cd infrastructure && npx vitest run` (or set up a test script in infrastructure/package.json)
+  - [x] 4.11 Run `cd infrastructure && npx cdk synth` — verify the CDK stack synthesises without errors. Do NOT deploy yet (that happens in task 6)
 
 > **CHECKPOINT: Stop here.** Verify (build/lint/test), summarise what was implemented, list assumptions + failure modes + production risks, and **wait for explicit user approval** before continuing.
 

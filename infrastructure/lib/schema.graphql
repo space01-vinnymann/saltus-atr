@@ -1,0 +1,42 @@
+type Query {
+  getQuestions: [Question]
+}
+
+type Mutation {
+  calculateRisk(responses: [Response]): RiskResult
+  generateRiskResultPDF(input: RiskResultPDFInput): PDFOutput
+}
+
+type Question {
+  id: ID!
+  text: String!
+  answers: [Answer]!
+}
+
+type Answer {
+  id: ID!
+  text: String!
+}
+
+type RiskResult {
+  rating: Int!
+}
+
+type PDFOutput {
+  url: String!
+}
+
+input Response {
+  questionId: ID!
+  responseId: ID!
+}
+
+input RiskResultPDFInput {
+  RiskRating: String!
+  RiskAnswers: [RiskAnswerInput]
+}
+
+input RiskAnswerInput {
+  questionId: Int!
+  responseId: Int!
+}
