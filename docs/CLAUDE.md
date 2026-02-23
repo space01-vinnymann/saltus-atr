@@ -67,6 +67,12 @@ Lambda with Puppeteer-core + `@sparticuz/chromium` (2048MB, 300s timeout). Gener
 
 **Important:** The PDF Lambda uses a hardcoded copy of questions — must stay synchronized with EValue's live questions.
 
+## Process Rules
+
+- **Clean up servers:** When you start a dev server or any background process (e.g. for E2E tests), always kill it when you're done. Never leave stale servers running.
+- **Each phase must be visually testable:** When building frontend features, always ensure the UI can be tested with real or mock data at every checkpoint — not just that it compiles. Set up mock data, stubs, or dev fixtures *before* building components so the UI is interactive and visually verifiable throughout development. At each checkpoint, run the dev server and use Playwright (or similar) to verify the UI renders correctly with data, not just that build/lint/test pass. The user should be able to `yarn dev` and manually inspect every page at any point.
+- **Test-driven mindset:** Write or update tests before or alongside implementation, not as an afterthought. Unit tests for logic (reducers, scoring, utils), component tests for UI behaviour, and E2E verification against mock or real data at each milestone.
+
 ## Key Patterns & Conventions
 
 - **Iframe messaging:** App posts height to parent window every 200ms via `postMessage` for dynamic iframe resizing

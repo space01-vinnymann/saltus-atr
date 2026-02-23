@@ -35,7 +35,8 @@
       "mcp__playwright__browser_snapshot",
       "Bash(lsof:*)",
       "Bash(kill:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(ps:*)"
     ]
   }
 }
