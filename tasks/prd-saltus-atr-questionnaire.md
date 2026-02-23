@@ -4,9 +4,9 @@
 
 Build a Saltus-branded attitude-to-risk questionnaire app for **internal demo purposes**. The app presents a 13-question risk profiler (based on the EValue "5risk" format), calculates a risk rating (1-5), displays results, and generates a downloadable PDF report. The app is anonymous — no user authentication or personal data is collected.
 
-This is **not** connecting to real EValue APIs or Saltus infrastructure. The EValue API is fully mocked in the backend Lambdas — questions are hardcoded and risk calculation uses a simple scoring algorithm. Infrastructure is deployed to the developer's own AWS account.
+This is **not** connecting to real EValue APIs or Saltus infrastructure. The EValue API is fully mocked in the backend Lambdas — questions are hardcoded and risk calculation uses a simple scoring algorithm. Infrastructure is deployed to the developer's own AWS account. We mock EValue rather than integrating with it because the demo needs to be deployable to any developer AWS account with zero prerequisites — no API keys, no OAuth credentials, no Secrets Manager entries. This keeps the setup to a single `cdk deploy`.
 
-The frontend uses a modern stack (Vite, Tailwind CSS v4, Headless UI) with Saltus branding (navy/teal/coral palette, Georgia headings, Roboto body text). All user-facing copy is taken from the original Standard Life spec with "Standard Life" replaced by "Saltus".
+The frontend uses a modern stack (Vite, Tailwind CSS v4, Headless UI) with Saltus branding (navy/teal/coral palette, Georgia headings, Roboto body text). The original app used CRA + Ionic + React Bootstrap + styled-components — three overlapping styling systems. We consolidated to Tailwind v4 + Headless UI because it's fewer dependencies, a single styling approach, and maps cleanly to the Saltus design tokens. All user-facing copy is taken from the original Standard Life spec with "Standard Life" replaced by "Saltus".
 
 **Reference:** The original application spec is in `docs/APPLICATION_SPEC.md`. The Saltus design system is captured in `docs/saltus-website.pen`.
 
@@ -82,7 +82,7 @@ The frontend uses a modern stack (Vite, Tailwind CSS v4, Headless UI) with Saltu
 
 ### 4.5 Frontend — State Management
 
-27. Implement React Context + `useReducer` with the following state shape:
+27. Implement React Context + `useReducer` with the following state shape. We use Context + useReducer rather than Redux or Zustand because the state is small and predictable (13 questions, 13 answers, one rating) with no async middleware needs. useReducer gives us a clear action vocabulary without adding dependencies:
 
 ```typescript
 {
@@ -101,8 +101,8 @@ The frontend uses a modern stack (Vite, Tailwind CSS v4, Headless UI) with Saltu
 
 ### 4.6 Frontend — Iframe Height Resizing
 
-31. Implement a `useIframeHeight` hook that runs `setInterval` (200ms) posting `['setHeight', documentHeight]` to `window.parent` via `postMessage('*')`
-32. The hook must be active in both standalone and iframe modes (harmless when not in an iframe)
+31. Implement a `useIframeHeight` hook that runs `setInterval` (200ms) posting `['setHeight', documentHeight]` to `window.parent` via `postMessage('*')`. We use `setInterval` rather than `ResizeObserver` because the parent iframe needs periodic height updates even when DOM mutations don't trigger a resize event (e.g. font loading, image rendering). 200ms is frequent enough for smooth resizing without being expensive
+32. The hook must be active in both standalone and iframe modes (harmless when not in an iframe — `window.parent === window` means postMessage goes to self)
 
 ### 4.7 Frontend — Analytics (Stubbed)
 
@@ -148,7 +148,7 @@ input RiskResultPDFInput { RiskRating: String!; RiskAnswers: [RiskAnswerInput] }
 input RiskAnswerInput    { questionId: Int!; responseId: Int! }
 ```
 
-Note: Since EValue is mocked, the token Lambda is eliminated. `getQuestions` and `calculateRisk` are single-Lambda resolvers (not pipelines).
+Note: Since EValue is mocked, the token Lambda is eliminated. `getQuestions` and `calculateRisk` are single-Lambda resolvers (not pipelines). The original used pipeline resolvers to chain an OAuth token Lambda before the data Lambda — with no real API to authenticate against, this indirection adds complexity with no benefit.
 
 ### 4.10 Backend — Lambda: getQuestionsSaltusATR
 
@@ -159,21 +159,21 @@ Note: Since EValue is mocked, the token Lambda is eliminated. `getQuestions` and
 ### 4.11 Backend — Lambda: calculateRiskSaltusATR
 
 40. Receive responses from `event.arguments.responses`
-41. Calculate a risk score using a simple weighted average: each question has 5 answer options scored 1-5 (first answer = highest risk appetite, last = lowest for most questions). Average all scores and round to the nearest integer, clamped to [1, 5]
+41. Calculate a risk score using a simple weighted average: each question has 5 answer options scored 1-5 (first answer = highest risk appetite, last = lowest for most questions). Average all scores and round to the nearest integer, clamped to [1, 5]. We use a weighted average rather than a simpler sum because questions have different numbers of options (Q10 has 3, the rest have 5) — averaging normalises this. The forward/reverse scoring per question reflects how questions are framed: agreeing with "I enjoy exploring investments" indicates high risk tolerance, while agreeing with "I want my money to be safe" indicates low tolerance
 42. Return `{ rating: <integer 1-5> }`
-43. This is a deterministic mock — same answers always produce the same rating
+43. This is a deterministic mock — same answers always produce the same rating. Determinism is important so the demo behaves predictably during walkthroughs
 
 ### 4.12 Backend — Lambda: generateRiskResultPDFSaltusATR
 
 44. Generate a UUID for the document filename
 45. Extract `RiskRating` and `RiskAnswers` from `event.arguments.input`
-46. Compile the Saltus-branded HTML template with lodash.template, passing `{ RiskRating, RiskQuestionsString, RiskAnswersString, date }`
-47. Store compiled HTML as `{uuid}_debug.html` in S3 (useful for debugging)
-48. Render HTML to PDF using headless Chromium (Puppeteer-core + @sparticuz/chromium): A4 format, 1-inch margins, `printBackground: true`
-49. Store PDF as `{uuid}` in S3 with ContentType `application/pdf`
-50. Generate pre-signed GET URL (expires in 120 seconds)
+46. Compile the Saltus-branded HTML template with lodash.template, passing `{ RiskRating, RiskQuestionsString, RiskAnswersString, date }`. We use lodash.template (Underscore-style `<%= %>`) rather than a JSX/React renderer because the template is static HTML with simple variable interpolation — no component lifecycle or reactivity needed, and lodash.template compiles to a plain string with minimal overhead
+47. Store compiled HTML as `{uuid}_debug.html` in S3 (useful for debugging template rendering issues without re-running Chromium)
+48. Render HTML to PDF using headless Chromium (Puppeteer-core + @sparticuz/chromium): A4 format, 1-inch margins, `printBackground: true`. We use Chromium rather than a library like pdfkit or jsPDF because the template relies on CSS layout, Google Fonts, and JavaScript — only a real browser engine can render this faithfully. `@sparticuz/chromium` is purpose-built for Lambda's execution environment
+49. Store PDF as `{uuid}` in S3 with ContentType `application/pdf`. We store in S3 rather than returning inline through AppSync because PDFs can be several hundred KB — base64-encoding would add 33% overhead and risks hitting AppSync's 1MB response limit
+50. Generate pre-signed GET URL (expires in 120 seconds). The 120-second expiry is short enough to discourage link sharing but long enough for the immediate download flow
 51. Return `{ url }`
-52. Lambda config: 2048MB memory, 300s timeout, Node.js 22.x runtime
+52. Lambda config: 2048MB memory, 300s timeout, Node.js 22.x runtime. The high memory is required because Chromium is memory-hungry (~500MB baseline). The 300s timeout accommodates Lambda cold starts (~8-15s for Chromium initialisation) plus rendering time
 
 ### 4.13 Backend — PDF Template (3-page A4, Saltus branded)
 
@@ -215,12 +215,13 @@ Note: Since EValue is mocked, the token Lambda is eliminated. `getQuestions` and
 ### 4.16 Backend — CDK Infrastructure
 
 65. S3 Bucket for PDFs: `SaltusATRPDFStore-{env}`, all public access blocked
-66. Cognito Identity Pool: unauthenticated access only (no login), IAM role for AppSync access
+66. Cognito Identity Pool: unauthenticated access only (no login), IAM role for AppSync access. We use Cognito with anonymous access rather than API keys because: (a) API keys expire after max 365 days and can't be scoped via IAM, (b) Cognito issues temporary credentials that can be tightly scoped to `appsync:GraphQL` only, preventing misuse of other AWS services. The app doesn't need user accounts, but AppSync requires an auth mode — anonymous Cognito provides signed requests without requiring login
 67. Lambda Layer: shared dependencies (puppeteer-core, @sparticuz/chromium, lodash.template)
-68. AppSync API with the GraphQL schema from 4.9
+68. AppSync API with the GraphQL schema from 4.9. We use AppSync rather than API Gateway + REST because it matches the original production architecture, provides a typed schema as self-documentation, and handles the Lambda-to-resolver wiring declaratively
 69. Three Lambda functions: `getQuestionsSaltusATR`, `calculateRiskSaltusATR`, `generateRiskResultPDFSaltusATR`
+70. All infrastructure in a single CDK stack rather than separate stacks per service. This is appropriate for a demo — single-command deploy/destroy with no cross-stack dependency management
 
-No WAF, no Secrets Manager, no S3 lifecycle policy needed for demo.
+No WAF, no Secrets Manager, no S3 lifecycle policy needed for demo. These are flagged as production hardening items but add complexity that isn't justified for an internal demo with no real user data.
 
 ### 4.17 Backend — S3 Service Layer
 
@@ -236,8 +237,8 @@ No WAF, no Secrets Manager, no S3 lifecycle policy needed for demo.
 
 ### 4.19 Frontend — GraphQL Client
 
-76. Use Apollo Client 3.x with `aws-appsync-auth-link` for AppSync IAM authentication
-77. Use Cognito unauthenticated identity pool credentials
+76. Use Apollo Client 3.x with AppSync IAM authentication. The original plan was to use `aws-appsync-auth-link`, but this library uses Node.js `url.parse()` internally which doesn't exist in Vite's browser environment. Instead, we implement custom SigV4 signing using `@smithy/signature-v4` — the same signing library AWS SDK v3 uses internally, so it's well-tested and browser-compatible
+77. Use Cognito unauthenticated identity pool credentials. Credentials are fetched fresh on each request rather than cached — slightly wasteful but avoids expiry edge cases and keeps the implementation simple for a demo
 
 ## 5. Non-Goals (Out of Scope)
 
@@ -331,11 +332,12 @@ No WAF, no Secrets Manager, no S3 lifecycle policy needed for demo.
 
 ### 7.2 Key Architectural Decisions
 
-- **Vite over CRA:** CRA is deprecated; Vite provides faster HMR and build times
-- **Tailwind CSS v4 over styled-components:** Utility-first approach reduces bundle size and simplifies Saltus design token mapping. Define Saltus colours/fonts as Tailwind theme tokens
-- **Headless UI only (no Ionic/React Bootstrap):** Reduces dependency count; Headless UI provides accessible primitives (RadioGroup, Dialog) that we style with Tailwind
-- **Mocked EValue API:** Lambdas return hardcoded questions and use a simple scoring algorithm — no external API calls, no secrets, no OAuth flow
-- **PDF download via blob:** The pre-signed S3 URL expires in 120 seconds; the frontend fetches it immediately as a blob and triggers download via `file-saver`
+- **Vite over CRA:** CRA is deprecated and no longer maintained. Vite provides faster HMR, native ESM, and a better plugin ecosystem. This choice also drove the SigV4 signing decision — Vite's browser-only build environment exposed an incompatibility in `aws-appsync-auth-link`
+- **Tailwind CSS v4 over styled-components:** The original app used three overlapping styling systems (Ionic, Bootstrap, styled-components). Tailwind v4's `@theme` directive maps directly to Saltus design tokens and eliminates runtime CSS-in-JS overhead. v4 specifically because it requires no `tailwind.config.js` — the theme lives in CSS where designers can read it
+- **Headless UI v2 only (no Ionic/React Bootstrap):** Reduces dependency count from 3 UI libraries to 1. Headless UI provides accessible primitives (RadioGroup) with zero styling opinions — we apply Saltus styles via Tailwind. v2 specifically because its `data-checked:` attribute pattern maps directly onto Tailwind v4's data attribute variants
+- **Mocked EValue API:** Lambdas return hardcoded questions and use a simple scoring algorithm — no external API calls, no secrets, no OAuth flow. This means any developer can deploy to their own AWS account with a single `cdk deploy` command
+- **PDF download via blob:** Navigating directly to the pre-signed S3 URL would open the PDF in-browser on most browsers rather than downloading it. Fetching as a blob via axios and triggering download via `file-saver` guarantees a download prompt with a consistent filename (`risk-results.pdf`) across all browsers
+- **Mock GraphQL link for local dev:** When `VITE_APPSYNC_ENDPOINT` is not configured, Apollo falls back to an in-process mock that runs the real scoring algorithm. This means frontend development never blocks on infrastructure deployment — the UI is fully interactive from day one
 
 ### 7.3 Environment Variables
 

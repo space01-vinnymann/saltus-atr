@@ -17,7 +17,7 @@ Browser (React SPA)
         └── generateRiskResultPDF → Lambda → Chromium PDF → S3 → presigned URL
 ```
 
-**Auth flow**: Cognito Identity Pool (unauthenticated) → temporary AWS credentials → SigV4-signed AppSync requests.
+**Auth flow**: Cognito Identity Pool (unauthenticated) → temporary AWS credentials → SigV4-signed AppSync requests. We use anonymous Cognito rather than API keys because API keys expire after max 365 days and can't be scoped via IAM. Cognito issues temporary credentials scoped to `appsync:GraphQL` only, preventing misuse of other AWS services while requiring zero user interaction.
 
 ---
 
@@ -58,7 +58,7 @@ Browser (React SPA)
 | `src/graphql/mockData.ts` | 13 questions + mock scoring for local dev | — |
 | `src/graphql/mockLink.ts` | Mock Apollo Link (used when no endpoint configured) | — |
 
-**Review focus**: `client.ts` contains the custom SigV4 signing implementation that replaced the broken `aws-appsync-auth-link` library. Verify the signing approach is correct and credentials aren't leaked.
+**Review focus**: `client.ts` contains the custom SigV4 signing implementation that replaced `aws-appsync-auth-link`. The library was dropped because it uses Node.js `url.parse()` internally, which doesn't exist in Vite's browser build environment. The replacement uses `@smithy/signature-v4` — the same signing library AWS SDK v3 uses internally, so it's well-tested. When no endpoint is configured, Apollo falls back to a `MockLink` for local dev so the frontend is runnable without deployed infrastructure. Verify the signing approach is correct and credentials aren't leaked.
 
 ### 4. Components (Medium Priority)
 
@@ -79,7 +79,7 @@ Browser (React SPA)
 | `src/pages/Error.tsx` | Error message with back button |
 | `src/App.tsx` | Router setup, providers |
 
-**Review focus**: `Results.tsx` handles risk calculation mutation, PDF generation mutation, and file download. Check error handling paths.
+**Review focus**: `Results.tsx` handles risk calculation mutation, PDF generation mutation, and file download. PDF errors show an inline message rather than redirecting to `/error` — this is deliberate so the user doesn't lose their risk rating result. The PDF is fetched as a blob via axios rather than navigating to the presigned URL because direct navigation would open the PDF in-browser instead of downloading. Check error handling paths.
 
 ### 6. Assets (Low Priority)
 
@@ -98,10 +98,10 @@ Browser (React SPA)
 | `infrastructure/lib/saltus-atr-stack.ts` | **Full stack**: S3, Cognito, AppSync, 3 Lambdas, IAM |
 | `infrastructure/lib/schema.graphql` | GraphQL schema (Query, Mutation, types, inputs) |
 
-**Review focus**: `saltus-atr-stack.ts` is the most critical file. Check:
-- Cognito unauthenticated role permissions (should only allow `appsync:GraphQL`)
+**Review focus**: `saltus-atr-stack.ts` is the most critical file. All infrastructure lives in a single stack — appropriate for a demo (single-command deploy/destroy) but would need splitting for production. Check:
+- Cognito unauthenticated role permissions (should only allow `appsync:GraphQL` — this is the key security boundary preventing misuse of other AWS services)
 - S3 bucket is BLOCK_ALL with CORS for GET only
-- Lambda memory/timeout settings (PDF Lambda: 2048MB, 300s)
+- Lambda memory/timeout settings (PDF Lambda: 2048MB because Chromium needs ~500MB baseline, 300s to accommodate cold starts of 8-15s plus rendering)
 - No overly permissive IAM policies
 
 ### 8. Lambda: getQuestions (Low Priority)
@@ -118,7 +118,7 @@ Browser (React SPA)
 | `infrastructure/lambda/calculateRisk/scoring.ts` | Weighted-average scoring algorithm | 7 tests |
 | `infrastructure/lambda/calculateRisk/index.ts` | Handler: extract responses, return rating | — |
 
-**Review focus**: Scoring algorithm implements forward/reverse scoring per PRD. Q10 has 3 options (not 5). Q12 is forward-scored. Verify the scoring matches the PRD specification in section 4.15.
+**Review focus**: Scoring algorithm implements forward/reverse scoring per PRD. The distinction reflects question framing — "I enjoy exploring investments" (agree = high risk = score 5) vs "I want my money safe" (agree = low risk = score 1). Q10 uses a non-linear map `{1:1, 2:5, 3:3}` because its 3 options aren't evenly distributed on the risk spectrum ("Mixture" is middle-ground, not highest-risk). Scores are averaged (not summed) to normalise for Q10 having 3 options vs 5. Q12 is forward-scored. Verify the scoring matches the PRD specification in section 4.15.
 
 ### 10. Lambda: generatePDF (High Priority)
 
@@ -129,7 +129,7 @@ Browser (React SPA)
 | `infrastructure/lambda/generatePDF/template.ts` | 3-page A4 HTML template with Saltus branding |
 | `infrastructure/lambda/generatePDF/index.ts` | Handler: compile template, Chromium PDF, S3, presigned URL |
 
-**Review focus**: Template uses lodash.template with inline JavaScript to render radio-button answer grids. Verify the JS logic correctly maps answers to questions across pages 2-3. Check that HTML-encoding in `index.ts` prevents injection.
+**Review focus**: Template uses lodash.template with inline JavaScript to render radio-button answer grids. lodash.template was chosen over a React/JSX renderer because the template is static HTML with simple interpolation — no component lifecycle needed, and it compiles to a plain string with minimal overhead. The Lambda uses `waitUntil: 'networkidle0'` when setting page content to ensure Google Fonts (Roboto) is fully loaded before rendering — without this, fonts fall back to sans-serif. Verify the JS logic correctly maps answers to questions across pages 2-3. Check that HTML-encoding in `index.ts` (via `escapeForJsString()`) prevents `</script>` breakout injection.
 
 ---
 
@@ -169,12 +169,13 @@ Browser (React SPA)
 
 ## Known Issues & Technical Debt
 
-1. **Duplicate question data** — `generatePDF/data.ts` is a manual copy of `getQuestions/data.ts`. Should be a shared module.
-2. **Bundle size** — 606KB (197KB gzipped). AWS SDK contributes significantly. Could be reduced with code splitting.
-3. **No rate limiting** — Unauthenticated Cognito users can invoke the API without restriction.
-4. **Debug HTML in S3** — The PDF Lambda stores `{uuid}_debug.html` alongside PDFs. Should be removed for production.
-5. **No frontend hosting** — App runs locally via `yarn dev`. Production deployment needs S3+CloudFront or Amplify.
-6. **`aws-appsync-auth-link` removed** — Replaced with custom SigV4 signing due to Node.js `url.parse` incompatibility in Vite. The custom implementation is simpler but less battle-tested.
+1. **Duplicate question data** — `generatePDF/data.ts` is a manual copy of `getQuestions/data.ts`. Ideally a shared module, but CDK bundles each Lambda independently — sharing would require a monorepo structure or Lambda Layer. Accepted for demo scope.
+2. **Bundle size** — 606KB (197KB gzipped). AWS SDK (`@smithy` signing packages, Cognito client) contributes significantly. Could be reduced with code splitting or tree-shaking, but acceptable for a demo that doesn't need aggressive optimisation.
+3. **No rate limiting** — Unauthenticated Cognito users can invoke the API without restriction. In production, WAF or AppSync-level throttling would be needed. Omitted here because it adds infrastructure complexity without benefit for an internal demo.
+4. **Debug HTML in S3** — The PDF Lambda stores `{uuid}_debug.html` alongside PDFs when `DEBUG_PDF` env var is set. Useful for debugging template rendering without re-running Chromium. Should remain gated (not always-on) in production.
+5. **No frontend hosting** — App runs locally via `yarn dev`. Production deployment needs S3+CloudFront or Amplify. The `dist/` folder is committed for convenience but a proper CI/CD pipeline would build on deploy.
+6. **`aws-appsync-auth-link` removed** — Replaced with custom SigV4 signing because the library uses Node.js `url.parse()` which doesn't exist in Vite's browser build. The custom implementation uses `@smithy/signature-v4` — the same library AWS SDK v3 uses internally — so while it's a custom integration, the underlying crypto is well-tested.
+7. **No credential caching** — Cognito credentials are fetched fresh on every GraphQL request. Slightly wasteful but avoids expiry edge cases. A production app would cache with TTL-based refresh.
 
 ---
 
@@ -182,12 +183,22 @@ Browser (React SPA)
 
 | Decision | Rationale |
 |---|---|
-| Custom SigV4 signing over `aws-appsync-auth-link` | Library uses Node.js `url.parse`, breaks in Vite browser builds |
-| Mock GraphQL link for local dev | Frontend can be developed and tested without deployed backend |
-| `@sparticuz/chromium` bundled via `nodeModules` | Simpler than a Lambda Layer, stays within Lambda size limits |
-| Inline PDF error (not /error page) | PDF download failure shouldn't lose the user's results |
-| S3 CORS `*` origins for GET | Presigned URLs are already authenticated; CORS origin restriction adds no security |
-| Headless UI v2 `Radio` component | v1 `RadioGroup.Option` API deprecated; v2 uses `data-checked:` Tailwind v4 classes |
+| Custom SigV4 signing over `aws-appsync-auth-link` | Library uses Node.js `url.parse`, breaks in Vite browser builds. Replacement uses `@smithy/signature-v4` — the same library AWS SDK v3 uses internally |
+| Mock GraphQL link for local dev | Frontend can be developed and tested without deployed backend. Runs the real scoring algorithm in-process so results are realistic |
+| Vite over CRA | CRA is deprecated and unmaintained. Vite provides faster HMR, native ESM, and a better plugin ecosystem |
+| Tailwind v4 + Headless UI v2 (not Ionic + Bootstrap + styled-components) | Original used 3 overlapping styling systems. Tailwind v4's `@theme` maps directly to Saltus design tokens; Headless UI v2's `data-checked:` maps onto Tailwind data attribute variants |
+| Context + useReducer (not Redux/Zustand) | State is small and predictable (13 questions, 13 answers, 1 rating) with no async middleware needs |
+| react-hook-form (not controlled inputs) | Uncontrolled approach avoids re-renders during radio selection; `reset()` gives clean state between questions |
+| `key={currentQuestion}` remounting | Forces React to unmount/remount QuestionForm on each question, naturally resetting form state without imperative calls |
+| `@sparticuz/chromium` bundled via `nodeModules` | Simpler than a Lambda Layer — no separate deployment or version management. Stays within Lambda size limits |
+| lodash.template (not React/JSX renderer) | PDF template is static HTML with simple interpolation — no component lifecycle needed, compiles to a plain string |
+| `networkidle0` for PDF rendering | Ensures Google Fonts (Roboto) loads before PDF generation. Adds 1-2s latency but produces correctly styled output |
+| S3 + presigned URL (not inline GraphQL response) | PDFs can be hundreds of KB; base64 encoding adds 33% overhead and risks AppSync's 1MB response limit |
+| Blob fetch + FileSaver (not direct URL navigation) | Direct navigation opens PDF in-browser on most browsers. Blob fetch guarantees a download prompt with consistent filename |
+| Inline PDF error (not /error page) | PDF download failure shouldn't lose the user's risk rating result |
+| Cognito anonymous (not API keys) | API keys expire after 365 days max and can't be scoped via IAM. Cognito temporary credentials are scoped to `appsync:GraphQL` only |
+| Single CDK stack | Appropriate for demo — single-command deploy/destroy with no cross-stack dependencies |
+| Forward-only questionnaire (no back button) | Matches the original production spec; `RESET_FORM` provides a full restart path |
 
 ---
 
