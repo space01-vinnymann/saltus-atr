@@ -43,10 +43,13 @@ function createAppSyncLink(): ApolloLink {
     const { Credentials } = await cognitoClient.send(
       new GetCredentialsForIdentityCommand({ IdentityId }),
     )
+    if (!Credentials?.AccessKeyId || !Credentials?.SecretKey || !Credentials?.SessionToken) {
+      throw new Error('Failed to obtain Cognito credentials')
+    }
     return {
-      accessKeyId: Credentials!.AccessKeyId!,
-      secretAccessKey: Credentials!.SecretKey!,
-      sessionToken: Credentials!.SessionToken!,
+      accessKeyId: Credentials.AccessKeyId,
+      secretAccessKey: Credentials.SecretKey,
+      sessionToken: Credentials.SessionToken,
     }
   }
 

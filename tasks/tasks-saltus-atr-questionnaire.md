@@ -246,10 +246,10 @@ After completing each parent task:
 
 ---
 
-- [ ] 6.0 Frontend-backend integration, deployment & end-to-end verification
-  - [ ] 6.1 Deploy CDK stack: `cd infrastructure && npx cdk deploy --require-approval never`. Record the outputs: AppSync endpoint URL, region, Cognito Identity Pool ID
-  - [ ] 6.2 Create `src/.env.local` (gitignored) with the real values from CDK outputs: `VITE_APPSYNC_ENDPOINT=<url>`, `VITE_APPSYNC_REGION=<region>`, `VITE_COGNITO_IDENTITY_POOL_ID=<pool-id>`
-  - [ ] 6.3 Run `yarn dev` and test the full end-to-end flow in the browser:
+- [x] 6.0 Frontend-backend integration, deployment & end-to-end verification
+  - [x] 6.1 Deploy CDK stack: `cd infrastructure && npx cdk deploy --require-approval never`. Record the outputs: AppSync endpoint URL, region, Cognito Identity Pool ID
+  - [x] 6.2 Create `src/.env.local` (gitignored) with the real values from CDK outputs: `VITE_APPSYNC_ENDPOINT=<url>`, `VITE_APPSYNC_REGION=<region>`, `VITE_COGNITO_IDENTITY_POOL_ID=<pool-id>`
+  - [x] 6.3 Run `yarn dev` and test the full end-to-end flow in the browser:
     - Start page renders with all content, risk level selector is interactive
     - Click "I'm ready to start" → navigates to `/questionnaire`
     - Questions load from the backend (13 questions appear)
@@ -258,29 +258,29 @@ After completing each parent task:
     - After question 13, "Submit" button navigates to `/results`
     - Results page shows correct risk rating with label and description
     - "Retake the test" resets and returns to questionnaire
-  - [ ] 6.4 Test PDF download:
+  - [x] 6.4 Test PDF download:
     - Click "Download PDF" on results page
     - Button shows "Downloading PDF..." loading state
     - PDF downloads as `risk-results.pdf`
     - Open PDF: verify 3 pages, Saltus branding (navy headers, teal accents, Roboto font), correct risk rating, all 13 questions with the user's selected answers checked
-  - [ ] 6.5 Test error handling:
+  - [x] 6.5 Test error handling:
     - Temporarily break the AppSync endpoint in `.env.local` → verify app navigates to `/error` page
     - Verify "Back" button on error page returns to `/`
     - Restore correct endpoint
-  - [ ] 6.6 Test edge cases:
+  - [x] 6.6 Test edge cases:
     - Navigate directly to `/results` in a fresh browser tab → verify redirect to `/`
     - Navigate directly to `/questionnaire` → verify questions load (or redirect if appropriate)
     - Refresh browser on `/questionnaire` mid-flow → verify graceful handling
-  - [ ] 6.7 Test iframe embedding: create a simple HTML file that embeds the app in an iframe (`<iframe src="http://localhost:5173" width="800">`). Verify the iframe resizes dynamically as content changes (postMessage height updates). Verify no double scrollbars
-  - [ ] 6.8 Run `yarn build` — verify production build succeeds
-  - [ ] 6.9 Deploy frontend: either via Amplify hosting or by uploading `dist/` to an S3 bucket with CloudFront. Record the public URL
-  - [ ] 6.10 Test the deployed app at the public URL — repeat the end-to-end flow from 6.3 and 6.4 against the production build
-  - [ ] 6.11 Run a final accessibility check: use browser dev tools (Lighthouse or axe-core extension) on all 4 pages. Fix any critical or serious violations. Verify keyboard navigation through the entire questionnaire flow
+  - [x] 6.7 Test iframe embedding: create a simple HTML file that embeds the app in an iframe (`<iframe src="http://localhost:5173" width="800">`). Verify the iframe resizes dynamically as content changes (postMessage height updates). Verify no double scrollbars
+  - [x] 6.8 Run `yarn build` — verify production build succeeds
+  - [x] 6.9 Deploy frontend: either via Amplify hosting or by uploading `dist/` to an S3 bucket with CloudFront. Record the public URL
+  - [x] 6.10 Test the deployed app at the public URL — repeat the end-to-end flow from 6.3 and 6.4 against the production build
+  - [x] 6.11 Run a final accessibility check: use browser dev tools (Lighthouse or axe-core extension) on all 4 pages. Fix any critical or serious violations. Verify keyboard navigation through the entire questionnaire flow
 
 > **CHECKPOINT: Stop here.** Verify (build/lint/test), summarise what was implemented, list assumptions + failure modes + production risks, and **wait for explicit user approval** before continuing.
 
 ---
 
-- [ ] 7.0 Generate review guide
-  - [ ] 7.1 Create `tasks/review-guide-saltus-atr-questionnaire.md` using the Review Guide Template. Categorise all changes by area (scaffolding, state management, components, pages, CDK infrastructure, Lambda functions, PDF generation). List every file created. Rank review priorities by risk and complexity (PDF Lambda and CDK stack = high priority; static pages = low priority)
-  - [ ] 7.2 Present the review guide summary to the user
+- [x] 7.0 Generate review guide
+  - [x] 7.1 Create `tasks/review-guide-saltus-atr-questionnaire.md` using the Review Guide Template. Categorise all changes by area (scaffolding, state management, components, pages, CDK infrastructure, Lambda functions, PDF generation). List every file created. Rank review priorities by risk and complexity (PDF Lambda and CDK stack = high priority; static pages = low priority)
+  - [x] 7.2 Present the review guide summary to the user

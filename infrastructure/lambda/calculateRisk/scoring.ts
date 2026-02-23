@@ -19,6 +19,10 @@ const q10ScoreMap: Record<number, number> = { 1: 1, 2: 5, 3: 3 }
 // Same as forward scoring: answer 1→5, 2→4, 3→3, 4→2, 5→1
 
 export function calculateRiskScore(responses: Response[]): number {
+  if (responses.length === 0) {
+    throw new Error('No responses provided')
+  }
+
   let total = 0
 
   for (const response of responses) {

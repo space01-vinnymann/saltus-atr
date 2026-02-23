@@ -33,7 +33,7 @@ input Response {
 
 input RiskResultPDFInput {
   RiskRating: String!
-  RiskAnswers: [RiskAnswerInput]
+  RiskAnswers: [RiskAnswerInput]!
 }
 
 input RiskAnswerInput {

@@ -15,13 +15,16 @@ describe('questionnaireReducer', () => {
     expect(result.questions).toEqual(mockQuestions)
   })
 
-  it('SET_QUESTIONS no-ops when state.questions is falsy', () => {
-    const stateWithNullQuestions = { ...initialState, questions: null } as unknown as AppState
-    const result = questionnaireReducer(stateWithNullQuestions, {
+  it('SET_QUESTIONS overwrites existing questions', () => {
+    const stateWithQuestions = { ...initialState, questions: mockQuestions }
+    const newQuestions: Question[] = [
+      { id: '99', text: 'New Q', answers: [{ id: '1', text: 'X' }] },
+    ]
+    const result = questionnaireReducer(stateWithQuestions, {
       type: 'SET_QUESTIONS',
-      payload: mockQuestions,
+      payload: newQuestions,
     })
-    expect(result.questions).toBeNull()
+    expect(result.questions).toEqual(newQuestions)
   })
 
   it('SET_CURRENT_QUESTION updates the current question index', () => {
@@ -44,6 +47,19 @@ describe('questionnaireReducer', () => {
       payload: { questionId: 2, responseId: 1 },
     })
     expect(result2.answers).toHaveLength(2)
+  })
+
+  it('UPDATE_ANSWERS replaces existing answer for same questionId', () => {
+    const stateWithAnswer: AppState = {
+      ...initialState,
+      answers: [{ questionId: 1, responseId: 3 }, { questionId: 2, responseId: 1 }],
+    }
+    const result = questionnaireReducer(stateWithAnswer, {
+      type: 'UPDATE_ANSWERS',
+      payload: { questionId: 1, responseId: 5 },
+    })
+    expect(result.answers).toHaveLength(2)
+    expect(result.answers.find((a) => a.questionId === 1)?.responseId).toBe(5)
   })
 
   it('SET_RISK_RATING sets the integer rating', () => {

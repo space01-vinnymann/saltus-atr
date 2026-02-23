@@ -12,14 +12,17 @@ export const initialState: AppState = {
 export function questionnaireReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'SET_QUESTIONS':
-      if (!state.questions) return state
       return { ...state, questions: action.payload }
 
     case 'SET_CURRENT_QUESTION':
       return { ...state, currentQuestion: action.payload }
 
-    case 'UPDATE_ANSWERS':
-      return { ...state, answers: [...state.answers, action.payload] }
+    case 'UPDATE_ANSWERS': {
+      const existing = state.answers.filter(
+        (a) => a.questionId !== action.payload.questionId,
+      )
+      return { ...state, answers: [...existing, action.payload] }
+    }
 
     case 'SET_RISK_RATING':
       return { ...state, riskRating: action.payload }

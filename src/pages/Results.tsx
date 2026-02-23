@@ -53,7 +53,8 @@ export default function Results() {
     ) {
       calculateRisk({ variables: { responses: state.answers } })
         .then((result) => {
-          const rating = result.data!.calculateRisk.rating
+          const rating = result.data?.calculateRisk?.rating
+          if (rating == null) throw new Error('No risk rating returned')
           dispatch({ type: 'SET_RISK_RATING', payload: rating })
           const ratingInfo = getRiskRating(rating)
           if (ratingInfo) {
@@ -88,7 +89,8 @@ export default function Results() {
           },
         },
       })
-      const url = result.data!.generateRiskResultPDF.url
+      const url = result.data?.generateRiskResultPDF?.url
+      if (!url) throw new Error('No PDF URL returned')
       dispatch({ type: 'CREATE_PDF', payload: url })
       const response = await axios.get(url, { responseType: 'blob' })
       saveAs(response.data as Blob, 'risk-results.pdf')

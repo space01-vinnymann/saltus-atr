@@ -19,8 +19,13 @@ interface AppSyncEvent {
   }
 }
 
-function htmlEncode(str: string): string {
-  return str.replace(/'/g, '&#39;').replace(/"/g, '\\"')
+/** Escape a string for safe embedding inside a single-quoted JS string literal in a <script> block. */
+function escapeForJsString(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')     // escape backslashes first
+    .replace(/'/g, "\\'")       // escape single quotes (JS string delimiter)
+    .replace(/</g, '\\u003c')   // prevent </script> breakout
+    .replace(/>/g, '\\u003e')   // extra safety
 }
 
 export const handler = async (event: AppSyncEvent) => {
@@ -31,13 +36,22 @@ export const handler = async (event: AppSyncEvent) => {
     const uuid = randomUUID()
     const { RiskRating, RiskAnswers } = event.arguments.input
 
+    // Validate RiskRating is a known value (prevents HTML injection via unescaped template interpolation)
+    if (!['1', '2', '3', '4', '5'].includes(RiskRating)) {
+      throw new Error(`Invalid RiskRating: expected 1-5, got "${RiskRating}"`)
+    }
+
+    if (!Array.isArray(RiskAnswers) || RiskAnswers.length === 0) {
+      throw new Error('RiskAnswers must be a non-empty array')
+    }
+
     // Serialise questions and answers to JSON strings
     const questionsJson = JSON.stringify(questions)
     const answersJson = JSON.stringify(RiskAnswers)
 
-    // HTML-encode the JSON strings for safe embedding in template
-    const RiskQuestionsString = htmlEncode(questionsJson)
-    const RiskAnswersString = htmlEncode(answersJson)
+    // Escape the JSON strings for safe embedding in a <script> block
+    const RiskQuestionsString = escapeForJsString(questionsJson)
+    const RiskAnswersString = escapeForJsString(answersJson)
 
     // Format date as dd/mm/yyyy
     const date = new Date().toLocaleDateString('en-GB', {
@@ -54,8 +68,10 @@ export const handler = async (event: AppSyncEvent) => {
       date,
     })
 
-    // Store debug HTML in S3
-    await storeTemplate(bucket, `${uuid}_debug.html`, html)
+    // Store debug HTML in S3 (only when DEBUG_PDF is enabled)
+    if (process.env.DEBUG_PDF) {
+      await storeTemplate(bucket, `${uuid}_debug.html`, html)
+    }
 
     // Launch headless Chromium and generate PDF
     const browser = await puppeteer.launch({

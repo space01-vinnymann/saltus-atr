@@ -12,6 +12,9 @@ export class SaltusAtrStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props)
 
+    // Deploy with: cdk deploy -c allowedOrigin=https://your-domain.com
+    const allowedOrigin = this.node.tryGetContext('allowedOrigin') as string | undefined
+
     // S3 bucket for PDF storage
     const pdfBucket = new s3.Bucket(this, 'SaltusATRPDFStore', {
       bucketName: `saltus-atr-pdf-store-${this.account}`,
@@ -22,7 +25,7 @@ export class SaltusAtrStack extends cdk.Stack {
       cors: [
         {
           allowedMethods: [s3.HttpMethods.GET],
-          allowedOrigins: ['*'],
+          allowedOrigins: [allowedOrigin ?? 'http://localhost:*'],
           allowedHeaders: ['*'],
           maxAge: 3600,
         },
