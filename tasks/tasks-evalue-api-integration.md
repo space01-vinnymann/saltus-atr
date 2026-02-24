@@ -105,8 +105,8 @@ After completing each parent task:
 
 - [ ] 5.0 Update CDK stack with pipeline resolvers and new Lambda
   - [ ] 5.1 Read current CDK AppSync pipeline resolver documentation using Context7 MCP to understand the correct CDK API for creating pipeline resolvers with JS resolver functions
-  - [ ] 5.2 Add the `getEvalueToken` Lambda to `infrastructure/lib/saltus-atr-stack.ts`: create a `NodejsFunction` with entry `lambda/getEvalueToken/index.ts`, env vars `SECRET_NAME` (`SALTUS-ATR-dev`) and `EVALUE_API_BASE_URL` (`https://api.evalueproduction.com`), runtime Node.js 22.x, 256MB, 30s timeout
-  - [ ] 5.3 Add IAM policy to the token Lambda granting `secretsmanager:GetSecretValue` scoped to `arn:aws:secretsmanager:eu-west-2:*:secret:SALTUS-ATR-*`
+  - [ ] 5.2 Add the `getEvalueToken` Lambda to `infrastructure/lib/saltus-atr-stack.ts`: create a `NodejsFunction` with entry `lambda/getEvalueToken/index.ts`, env vars `SECRET_NAME` (`SALTUS-ATR-EVALUE-dev`) and `EVALUE_API_BASE_URL` (`https://api.evalueproduction.com`), runtime Node.js 22.x, 256MB, 30s timeout
+  - [ ] 5.3 Add IAM policy to the token Lambda granting `secretsmanager:GetSecretValue` scoped to `arn:aws:secretsmanager:eu-west-2:*:secret:SALTUS-ATR-EVALUE-*`
   - [ ] 5.4 Add `EVALUE_API_BASE_URL` environment variable to the existing `getQuestions` and `calculateRisk` Lambdas
   - [ ] 5.5 Create an AppSync data source for the `getEvalueToken` Lambda
   - [ ] 5.6 Create `AppsyncFunction` objects for each Lambda data source (getEvalueToken, getQuestions, calculateRisk) with JS resolver request/response handlers that forward `ctx.prev.result` and `ctx.arguments`

@@ -45,7 +45,7 @@ This involves:
 
 ### 4.1 AWS Secrets Manager Secret
 
-1. A secret named `SALTUS-ATR-{env}` (e.g., `SALTUS-ATR-dev`, `SALTUS-ATR-prod`) must be created in AWS Secrets Manager in `eu-west-2`.
+1. A secret named `SALTUS-ATR-EVALUE-{env}` (e.g., `SALTUS-ATR-EVALUE-dev`, `SALTUS-ATR-EVALUE-prod`) must be created in AWS Secrets Manager in `eu-west-2`.
 2. The secret must contain the following JSON structure:
    ```json
    {
@@ -116,7 +116,7 @@ This involves:
 ### 4.5 CDK Stack Changes (Pipeline Resolvers)
 
 23. The CDK stack must create the new `getEvalueToken` Lambda with:
-    - Environment variable `SECRET_NAME` set to `SALTUS-ATR-dev` (configurable via CDK context or a stack variable for future environments)
+    - Environment variable `SECRET_NAME` set to `SALTUS-ATR-EVALUE-dev` (configurable via CDK context or a stack variable for future environments)
     - Environment variable `EVALUE_API_BASE_URL` set to `https://api.evalueproduction.com` (configurable via CDK context for future sandbox/staging use)
     - IAM policy for `secretsmanager:GetSecretValue` scoped to the specific secret
 24. The `getQuestions` and `calculateRisk` Lambdas must also receive the `EVALUE_API_BASE_URL` environment variable.
@@ -244,7 +244,7 @@ Secret lives in `eu-west-2` (same region as the stack).
 1. **EValue API contract is stable:** The response shapes documented in the APPLICATION_SPEC (section 4) are accurate and won't change without notice.
 2. **OAuth2 `client_credentials` flow:** EValue's token endpoint follows standard OAuth2. The token response includes `access_token` as a top-level field.
 3. **No VPC required:** Lambdas can reach `api.evalueproduction.com` over the public internet without VPC/NAT configuration.
-4. **Single environment for now:** Only one environment (`dev`) is deployed. The secret name is `SALTUS-ATR-dev`. The secret name and API base URL are configurable for future environments but only `dev` is active.
+4. **Single environment for now:** Only one environment (`dev`) is deployed. The secret name is `SALTUS-ATR-EVALUE-dev`. The secret name and API base URL are configurable for future environments but only `dev` is active.
 5. **`term: 15` is always correct:** The hardcoded term value of 15 is the correct value for Saltus's use case and does not need to be configurable.
 6. **Questions don't change frequently:** EValue's 5risk questionnaire (13 questions) is stable enough that passing questions from frontend to PDF Lambda (via a single session) won't cause stale-data issues.
 7. **Node.js 22.x native `fetch`:** Available in the Lambda runtime and does not need a polyfill or external package.
