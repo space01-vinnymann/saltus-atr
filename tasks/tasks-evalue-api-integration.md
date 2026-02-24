@@ -79,13 +79,13 @@ After completing each parent task:
 
 ---
 
-- [ ] 3.0 Modify `calculateRisk` Lambda to call EValue API
-  - [ ] 3.1 Read the current `infrastructure/lambda/calculateRisk/index.ts` to understand the existing handler signature
-  - [ ] 3.2 Rewrite `infrastructure/lambda/calculateRisk/index.ts` to: read `access_token` from `event.prev.result.access_token`; read responses from `event.arguments.responses`; read `EVALUE_API_BASE_URL` from env var; `POST` to `{EVALUE_API_BASE_URL}/riskQuestionnaire/1.0.0/riskProfiler/calculateRisk` with Bearer token and body `{ "responses": [...], "questionnaireName": "5risk", "term": 15 }` (ensure `questionId` and `responseId` are strings); clamp returned `riskProfile` to [1, 5] and truncate to integer via `parseInt()`; return `{ rating: <integer> }`
-  - [ ] 3.3 Add error handling: throw `"Missing EValue access token"` if missing; throw `"Failed to calculate risk rating"` on non-2xx, logging status and body
-  - [ ] 3.4 Delete `infrastructure/lambda/calculateRisk/scoring.ts` and `infrastructure/lambda/calculateRisk/scoring.test.ts`
-  - [ ] 3.5 Create `infrastructure/lambda/calculateRisk/index.test.ts` with Vitest tests covering: successful risk calculation and transformation (mock `global.fetch`); clamping below 1 returns 1; clamping above 5 returns 5; decimal truncation (e.g., 3.7 -> 3); missing `access_token`; EValue API non-2xx response
-  - [ ] 3.6 Run `cd infrastructure && yarn test` to confirm all tests pass
+- [x] 3.0 Modify `calculateRisk` Lambda to call EValue API
+  - [x] 3.1 Read the current `infrastructure/lambda/calculateRisk/index.ts` to understand the existing handler signature
+  - [x] 3.2 Rewrite `infrastructure/lambda/calculateRisk/index.ts` to: read `access_token` from `event.prev.result.access_token`; read responses from `event.arguments.responses`; read `EVALUE_API_BASE_URL` from env var; `POST` to `{EVALUE_API_BASE_URL}/riskQuestionnaire/1.0.0/riskProfiler/calculateRisk` with Bearer token and body `{ "responses": [...], "questionnaireName": "5risk", "term": 15 }` (ensure `questionId` and `responseId` are strings); clamp returned `riskProfile` to [1, 5] and truncate to integer via `parseInt()`; return `{ rating: <integer> }`
+  - [x] 3.3 Add error handling: throw `"Missing EValue access token"` if missing; throw `"Failed to calculate risk rating"` on non-2xx, logging status and body
+  - [x] 3.4 Delete `infrastructure/lambda/calculateRisk/scoring.ts` and `infrastructure/lambda/calculateRisk/scoring.test.ts`
+  - [x] 3.5 Create `infrastructure/lambda/calculateRisk/index.test.ts` with Vitest tests covering: successful risk calculation and transformation (mock `global.fetch`); clamping below 1 returns 1; clamping above 5 returns 5; decimal truncation (e.g., 3.7 -> 3); missing `access_token`; EValue API non-2xx response
+  - [x] 3.6 Run `cd infrastructure && yarn test` to confirm all tests pass
 
 > **CHECKPOINT: Stop here.** Verify (build/lint/test), summarise what was implemented, list assumptions + failure modes + production risks, and **wait for explicit user approval** before continuing.
 
