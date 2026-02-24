@@ -109,7 +109,7 @@ export const handler = async (event: AppSyncEvent) => {
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
-      margin: { top: '1in', right: '1in', bottom: '1in', left: '1in' },
+      margin: { top: '0.4in', right: '0', bottom: '0.4in', left: '0' },
       printBackground: true,
     })
 

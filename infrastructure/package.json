@@ -6,7 +6,8 @@
     "build": "tsc",
     "synth": "cdk synth",
     "deploy": "AWS_PROFILE=jr-dev cdk deploy SaltusAtrQuestionnaireStack",
-    "test": "vitest run --exclude 'dist/**'"
+    "test": "vitest run --exclude 'dist/**'",
+    "preview-pdf": "npx ts-node scripts/preview-pdf-template.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.995.0",
