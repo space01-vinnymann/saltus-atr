@@ -45,9 +45,9 @@ describe('compileTemplate', () => {
     const html = renderTemplate('3')
     // Logo should appear in page headers and footers
     expect(html).toContain('viewBox="0 0 995 246"')
-    // At least 3 pages × header + footer = 6 logo instances
+    // Page 1 header + footer = 2, questions section header + footer = 2 → 4 logos
     const logoCount = (html.match(/viewBox="0 0 995 246"/g) || []).length
-    expect(logoCount).toBe(6)
+    expect(logoCount).toBe(4)
   })
 
   it('includes the date', () => {
@@ -150,23 +150,23 @@ describe('compileTemplate', () => {
       expect(html).toContain('question-number')
     })
 
-    it('has empty question list containers for JS to populate', () => {
+    it('has empty question list container for JS to populate', () => {
       const html = renderTemplate('3')
-      expect(html).toContain('class="question-list first-section"')
-      expect(html).toContain('class="question-list second-section"')
+      expect(html).toContain('class="question-list all-questions"')
     })
 
-    it('splits questions at id 7 boundary', () => {
+    it('populates all questions into a single list', () => {
       const html = renderTemplate('3')
-      // The script splits at q.id <= 7 for first section
-      expect(html).toContain('q.id <= 7')
+      expect(html).toContain('.all-questions')
     })
   })
 
   describe('page structure', () => {
-    it('has 3 pages', () => {
-      const pageCount = (renderTemplate('3').match(/class="page"/g) || []).length
-      expect(pageCount).toBe(3)
+    it('has results page with forced page break followed by flowing questions section', () => {
+      const html = renderTemplate('3')
+      // Page 1 is the only fixed page; questions flow naturally
+      const pageCount = (html.match(/class="page"/g) || []).length
+      expect(pageCount).toBe(1)
     })
 
     it('page 1 has results title', () => {
@@ -174,18 +174,10 @@ describe('compileTemplate', () => {
       expect(html).toContain('Attitude to Risk')
     })
 
-    it('pages 2 and 3 show question ranges', () => {
+    it('questions section shows title and subtitle', () => {
       const html = renderTemplate('3')
-      expect(html).toContain('Questions 1')
-      expect(html).toContain('7 of 13')
-      expect(html).toContain('Questions 8')
-      expect(html).toContain('13 of 13')
-    })
-
-    it('includes page numbers in footers', () => {
-      const html = renderTemplate('3')
-      expect(html).toContain('Page 2 of 3')
-      expect(html).toContain('Page 3 of 3')
+      expect(html).toContain('Your Questions &amp; Answers')
+      expect(html).toContain('13 questions')
     })
   })
 
