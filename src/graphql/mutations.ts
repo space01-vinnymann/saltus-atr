@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client'
+import { gql } from "@apollo/client";
 
 export const CALCULATE_RISK = gql`
   mutation CalculateRisk($responses: [Response]) {
@@ -6,7 +6,7 @@ export const CALCULATE_RISK = gql`
       rating
     }
   }
-`
+`;
 
 export const GENERATE_PDF = gql`
   mutation GenerateRiskResultPDF($input: RiskResultPDFInput) {
@@ -14,4 +14,4 @@ export const GENERATE_PDF = gql`
       url
     }
   }
-`
+`;

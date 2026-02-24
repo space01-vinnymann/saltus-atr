@@ -73,6 +73,14 @@ export default function Results() {
           input: {
             RiskRating: String(state.riskRating),
             RiskAnswers: state.answers,
+            RiskQuestions: state.questions.map((q) => ({
+              questionId: parseInt(q.id),
+              questionText: q.text,
+              responses: q.answers.map((a) => ({
+                responseId: parseInt(a.id),
+                responseText: a.text,
+              })),
+            })),
           },
         },
       })

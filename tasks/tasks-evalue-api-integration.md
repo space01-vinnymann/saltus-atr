@@ -119,11 +119,11 @@ After completing each parent task:
 
 ---
 
-- [ ] 6.0 Update frontend to pass questions to PDF mutation
-  - [ ] 6.1 Update `src/graphql/mutations.ts`: modify the `GENERATE_PDF` mutation query string to include `RiskQuestions` in the input, with nested `questionId`, `questionText`, and `responses` fields (`responseId`, `responseText`)
-  - [ ] 6.2 Update `src/pages/Results.tsx`: in `handleDownloadPdf`, add `RiskQuestions` to the mutation variables by mapping `state.questions` to the new input shape (`questionId: parseInt(q.id)`, `questionText: q.text`, `responses: q.answers.map(a => ({ responseId: parseInt(a.id), responseText: a.text }))`)
-  - [ ] 6.3 Run `yarn build` from the project root to confirm no TypeScript errors
-  - [ ] 6.4 Run `yarn test` from the project root to confirm no frontend test failures
+- [x] 6.0 Update frontend to pass questions to PDF mutation
+  - [x] 6.1 Update `src/graphql/mutations.ts`: modify the `GENERATE_PDF` mutation query string to include `RiskQuestions` in the input, with nested `questionId`, `questionText`, and `responses` fields (`responseId`, `responseText`)
+  - [x] 6.2 Update `src/pages/Results.tsx`: in `handleDownloadPdf`, add `RiskQuestions` to the mutation variables by mapping `state.questions` to the new input shape (`questionId: parseInt(q.id)`, `questionText: q.text`, `responses: q.answers.map(a => ({ responseId: parseInt(a.id), responseText: a.text }))`)
+  - [x] 6.3 Run `yarn build` from the project root to confirm no TypeScript errors
+  - [x] 6.4 Run `yarn test` from the project root to confirm no frontend test failures
 
 > **CHECKPOINT: Stop here.** Verify (build/lint/test), summarise what was implemented, list assumptions + failure modes + production risks, and **wait for explicit user approval** before continuing.
 
