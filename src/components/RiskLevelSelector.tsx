@@ -18,12 +18,12 @@ export function RiskLevelSelector() {
         Click each level to learn more
       </p>
 
-      <RadioGroup value={selected} onChange={setSelected} className="mb-5 flex gap-2">
+      <RadioGroup value={selected} onChange={setSelected} className="mb-5 grid grid-cols-6 gap-2 sm:flex">
         {levels.map((level) => (
           <Radio
             key={level.rating}
             value={level.rating}
-            className="group flex flex-1 cursor-pointer flex-col items-center gap-1 rounded-input border border-border-clr bg-panel py-3 px-2 text-center transition-colors data-checked:border-2 data-checked:border-foreground data-checked:bg-muted hover:border-muted-fg"
+            className={`group flex cursor-pointer flex-col items-center gap-1 rounded-input border border-border-clr bg-panel py-3 px-2 text-center transition-colors data-checked:border-2 data-checked:border-foreground data-checked:bg-muted hover:border-muted-fg sm:flex-1 ${level.rating <= 3 ? 'col-span-2' : 'col-span-3'}`}
           >
             <span className="font-heading text-lg font-bold text-foreground">
               {level.rating}
