@@ -179,9 +179,10 @@ export class SaltusAtrStack extends cdk.Stack {
         dataSource: getEvalueTokenDs,
         code: appsync.Code.fromInline(`
           export function request(ctx) {
-            return { payload: { prev: ctx.prev, arguments: ctx.arguments } };
+            return { operation: "Invoke", payload: { prev: ctx.prev, arguments: ctx.arguments } };
           }
           export function response(ctx) {
+            if (ctx.error) { util.error(ctx.error.message, ctx.error.type); }
             return ctx.result;
           }
         `),
@@ -198,9 +199,10 @@ export class SaltusAtrStack extends cdk.Stack {
         dataSource: getQuestionsDs,
         code: appsync.Code.fromInline(`
           export function request(ctx) {
-            return { payload: { prev: ctx.prev, arguments: ctx.arguments } };
+            return { operation: "Invoke", payload: { prev: ctx.prev, arguments: ctx.arguments } };
           }
           export function response(ctx) {
+            if (ctx.error) { util.error(ctx.error.message, ctx.error.type); }
             return ctx.result;
           }
         `),
@@ -217,9 +219,10 @@ export class SaltusAtrStack extends cdk.Stack {
         dataSource: calculateRiskDs,
         code: appsync.Code.fromInline(`
           export function request(ctx) {
-            return { payload: { prev: ctx.prev, arguments: ctx.arguments } };
+            return { operation: "Invoke", payload: { prev: ctx.prev, arguments: ctx.arguments } };
           }
           export function response(ctx) {
+            if (ctx.error) { util.error(ctx.error.message, ctx.error.type); }
             return ctx.result;
           }
         `),

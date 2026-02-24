@@ -129,18 +129,18 @@ After completing each parent task:
 
 ---
 
-- [ ] 7.0 Final review and cleanup
-  - [ ] 7.1 Verify no remaining imports of deleted files (`data.ts`, `scoring.ts`) across the entire codebase using grep
-  - [ ] 7.2 Verify no hardcoded EValue URLs exist in Lambda code (all should use `EVALUE_API_BASE_URL` env var)
-  - [ ] 7.3 Run full test suite: `yarn test` (frontend) and `cd infrastructure && yarn test` (Lambdas)
-  - [ ] 7.4 Run `yarn build` to confirm production build succeeds
-  - [ ] 7.5 Security review: confirm no secrets/tokens in code, no client-side trust assumptions, all auth is server-side, Secrets Manager ARN is scoped (not wildcard)
-  - [ ] 7.6 Review all changes against the PRD requirements checklist (requirements 1-38) to confirm nothing was missed
+- [x] 7.0 Final review and cleanup
+  - [x] 7.1 Verify no remaining imports of deleted files (`data.ts`, `scoring.ts`) across the entire codebase using grep
+  - [x] 7.2 Verify no hardcoded EValue URLs exist in Lambda code (all should use `EVALUE_API_BASE_URL` env var)
+  - [x] 7.3 Run full test suite: `yarn test` (frontend) and `cd infrastructure && yarn test` (Lambdas)
+  - [x] 7.4 Run `yarn build` to confirm production build succeeds
+  - [x] 7.5 Security review: confirm no secrets/tokens in code, no client-side trust assumptions, all auth is server-side, Secrets Manager ARN is scoped (not wildcard)
+  - [x] 7.6 Review all changes against the PRD requirements checklist (requirements 1-38) to confirm nothing was missed
 
 > **CHECKPOINT: Stop here.** Verify (build/lint/test), summarise what was implemented, list assumptions + failure modes + production risks, and **wait for explicit user approval** before continuing.
 
 ---
 
-- [ ] 8.0 Generate review guide
-  - [ ] 8.1 Create `/tasks/review-guide-evalue-api-integration.md` using the Review Guide Template. Categorise all changes by area (Lambda functions, CDK infrastructure, GraphQL schema, frontend), list every file changed/created/deleted, and rank review priorities by risk and complexity.
-  - [ ] 8.2 Present the review guide summary to the user.
+- [x] 8.0 Generate review guide
+  - [x] 8.1 Create `/tasks/review-guide-evalue-api-integration.md` using the Review Guide Template. Categorise all changes by area (Lambda functions, CDK infrastructure, GraphQL schema, frontend), list every file changed/created/deleted, and rank review priorities by risk and complexity.
+  - [x] 8.2 Present the review guide summary to the user.
