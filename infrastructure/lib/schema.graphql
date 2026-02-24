@@ -34,9 +34,21 @@ input Response {
 input RiskResultPDFInput {
   RiskRating: String!
   RiskAnswers: [RiskAnswerInput]!
+  RiskQuestions: [RiskQuestionInput]!
 }
 
 input RiskAnswerInput {
   questionId: Int!
   responseId: Int!
+}
+
+input RiskQuestionInput {
+  questionId: Int!
+  questionText: String!
+  responses: [RiskResponseInput]!
+}
+
+input RiskResponseInput {
+  responseId: Int!
+  responseText: String!
 }

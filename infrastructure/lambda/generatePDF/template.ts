@@ -253,6 +253,7 @@ const htmlTemplate = `<!DOCTYPE html>
 
     .question-item {
       margin-bottom: 18px;
+      break-inside: avoid;
     }
 
     .question-number {
@@ -354,43 +355,21 @@ const htmlTemplate = `<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- Page 2: Questions 1-7 -->
-  <div class="page" style="display:flex;flex-direction:column;">
+  <!-- Questions (flows naturally across pages) -->
+  <div style="padding: 40px;">
     <div class="page-header">
       <div class="logo">${saltusLogoSvg}</div>
       <span class="header-label">Risk Profile Report</span>
     </div>
 
     <div class="report-title">Your Questions &amp; Answers</div>
-    <div class="report-subtitle">Questions 1 &ndash; 7 of 13</div>
+    <div class="report-subtitle">13 questions</div>
 
-    <ol class="question-list first-section"></ol>
+    <ol class="question-list all-questions"></ol>
 
-    <div style="flex:1;"></div>
-
-    <div class="page-footer">
+    <div class="page-footer" style="margin-top: 24px;">
       <div class="footer-logo">${saltusLogoSvg}</div>
-      <span class="footer-text">Page 2 of 3</span>
-    </div>
-  </div>
-
-  <!-- Page 3: Questions 8-13 -->
-  <div class="page" style="display:flex;flex-direction:column;">
-    <div class="page-header">
-      <div class="logo">${saltusLogoSvg}</div>
-      <span class="header-label">Risk Profile Report</span>
-    </div>
-
-    <div class="report-title">Your Questions &amp; Answers</div>
-    <div class="report-subtitle">Questions 8 &ndash; 13 of 13</div>
-
-    <ol class="question-list second-section"></ol>
-
-    <div style="flex:1;"></div>
-
-    <div class="page-footer">
-      <div class="footer-logo">${saltusLogoSvg}</div>
-      <span class="footer-text">Page 3 of 3</span>
+      <span class="footer-text">Attitude to Risk Questionnaire</span>
     </div>
   </div>
 
@@ -420,20 +399,14 @@ const htmlTemplate = `<!DOCTYPE html>
         return html;
       }
 
-      var firstHtml = '';
-      var secondHtml = '';
+      var allHtml = '';
       var index = 1;
       questionsData.forEach(function(q) {
-        if (q.id <= 7) {
-          firstHtml += buildQuestionHtml(q, index);
-        } else {
-          secondHtml += buildQuestionHtml(q, index);
-        }
+        allHtml += buildQuestionHtml(q, index);
         index++;
       });
 
-      document.querySelector('.first-section').innerHTML = firstHtml;
-      document.querySelector('.second-section').innerHTML = secondHtml;
+      document.querySelector('.all-questions').innerHTML = allHtml;
     })();
   </script>
 </body>

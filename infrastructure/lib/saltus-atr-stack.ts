@@ -72,6 +72,44 @@ export class SaltusAtrStack extends cdk.Stack {
     // Grant unauthenticated role permission to invoke AppSync
     api.grant(unauthRole, appsync.IamResource.all(), "appsync:GraphQL");
 
+    const evalueApiBaseUrl = "https://api.evalueproduction.com";
+    const evalueSecretName = "SALTUS-ATR-EVALUE-dev";
+
+    // Lambda: getEvalueToken (fetches OAuth2 token from EValue)
+    const getEvalueTokenLambda = new lambda.NodejsFunction(
+      this,
+      "GetEvalueTokenFunction",
+      {
+        functionName: "saltusATRQuestionnaire-getEvalueToken",
+        entry: path.join(
+          __dirname,
+          "..",
+          "lambda",
+          "getEvalueToken",
+          "index.ts",
+        ),
+        handler: "handler",
+        runtime: lambdaBase.Runtime.NODEJS_22_X,
+        memorySize: 256,
+        timeout: cdk.Duration.seconds(30),
+        environment: {
+          SECRET_NAME: evalueSecretName,
+          EVALUE_API_BASE_URL: evalueApiBaseUrl,
+        },
+        bundling: { minify: true, sourceMap: true },
+      },
+    );
+
+    // Grant token Lambda permission to read the EValue secret
+    getEvalueTokenLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["secretsmanager:GetSecretValue"],
+        resources: [
+          `arn:aws:secretsmanager:${this.region}:${this.account}:secret:SALTUS-ATR-EVALUE-*`,
+        ],
+      }),
+    );
+
     // Lambda: getQuestions
     const getQuestionsLambda = new lambda.NodejsFunction(
       this,
@@ -83,6 +121,9 @@ export class SaltusAtrStack extends cdk.Stack {
         runtime: lambdaBase.Runtime.NODEJS_22_X,
         memorySize: 256,
         timeout: cdk.Duration.seconds(30),
+        environment: {
+          EVALUE_API_BASE_URL: evalueApiBaseUrl,
+        },
         bundling: { minify: true, sourceMap: true },
       },
     );
@@ -104,27 +145,123 @@ export class SaltusAtrStack extends cdk.Stack {
         runtime: lambdaBase.Runtime.NODEJS_22_X,
         memorySize: 256,
         timeout: cdk.Duration.seconds(30),
+        environment: {
+          EVALUE_API_BASE_URL: evalueApiBaseUrl,
+        },
         bundling: { minify: true, sourceMap: true },
       },
     );
 
-    // AppSync data sources and resolvers
+    // AppSync data sources
+    const getEvalueTokenDs = api.addLambdaDataSource(
+      "GetEvalueTokenDs",
+      getEvalueTokenLambda,
+    );
+
     const getQuestionsDs = api.addLambdaDataSource(
       "GetQuestionsDs",
       getQuestionsLambda,
     );
-    getQuestionsDs.createResolver("GetQuestionsResolver", {
-      typeName: "Query",
-      fieldName: "getQuestions",
-    });
 
     const calculateRiskDs = api.addLambdaDataSource(
       "CalculateRiskDs",
       calculateRiskLambda,
     );
-    calculateRiskDs.createResolver("CalculateRiskResolver", {
+
+    // AppSync Functions for pipeline resolvers
+    // Each function forwards ctx.prev.result and ctx.arguments to the next step
+    const getEvalueTokenFn = new appsync.AppsyncFunction(
+      this,
+      "GetEvalueTokenFn",
+      {
+        name: "GetEvalueTokenFn",
+        api,
+        dataSource: getEvalueTokenDs,
+        code: appsync.Code.fromInline(`
+          export function request(ctx) {
+            return { operation: "Invoke", payload: { prev: ctx.prev, arguments: ctx.arguments } };
+          }
+          export function response(ctx) {
+            if (ctx.error) { util.error(ctx.error.message, ctx.error.type); }
+            return ctx.result;
+          }
+        `),
+        runtime: appsync.FunctionRuntime.JS_1_0_0,
+      },
+    );
+
+    const getQuestionsFn = new appsync.AppsyncFunction(
+      this,
+      "GetQuestionsFn",
+      {
+        name: "GetQuestionsFn",
+        api,
+        dataSource: getQuestionsDs,
+        code: appsync.Code.fromInline(`
+          export function request(ctx) {
+            return { operation: "Invoke", payload: { prev: ctx.prev, arguments: ctx.arguments } };
+          }
+          export function response(ctx) {
+            if (ctx.error) { util.error(ctx.error.message, ctx.error.type); }
+            return ctx.result;
+          }
+        `),
+        runtime: appsync.FunctionRuntime.JS_1_0_0,
+      },
+    );
+
+    const calculateRiskFn = new appsync.AppsyncFunction(
+      this,
+      "CalculateRiskFn",
+      {
+        name: "CalculateRiskFn",
+        api,
+        dataSource: calculateRiskDs,
+        code: appsync.Code.fromInline(`
+          export function request(ctx) {
+            return { operation: "Invoke", payload: { prev: ctx.prev, arguments: ctx.arguments } };
+          }
+          export function response(ctx) {
+            if (ctx.error) { util.error(ctx.error.message, ctx.error.type); }
+            return ctx.result;
+          }
+        `),
+        runtime: appsync.FunctionRuntime.JS_1_0_0,
+      },
+    );
+
+    // Pipeline resolver: getQuestions = getEvalueToken -> getQuestions
+    new appsync.Resolver(this, "GetQuestionsResolver", {
+      api,
+      typeName: "Query",
+      fieldName: "getQuestions",
+      code: appsync.Code.fromInline(`
+        export function request(ctx) {
+          return {};
+        }
+        export function response(ctx) {
+          return ctx.prev.result;
+        }
+      `),
+      runtime: appsync.FunctionRuntime.JS_1_0_0,
+      pipelineConfig: [getEvalueTokenFn, getQuestionsFn],
+    });
+
+    // Pipeline resolver: calculateRisk = getEvalueToken -> calculateRisk
+    new appsync.Resolver(this, "CalculateRiskResolver", {
+      api,
       typeName: "Mutation",
       fieldName: "calculateRisk",
+      code: appsync.Code.fromInline(`
+        export function request(ctx) {
+          return {};
+        }
+        export function response(ctx) {
+          return ctx.prev.result;
+        }
+      `),
+      runtime: appsync.FunctionRuntime.JS_1_0_0,
+      pipelineConfig: [getEvalueTokenFn, calculateRiskFn],
     });
 
     // --- CloudFront + S3 Hosting ---

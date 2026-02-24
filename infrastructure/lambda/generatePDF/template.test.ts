@@ -1,7 +1,24 @@
 import { describe, it, expect } from 'vitest'
 import { compileTemplate } from './template'
-import { questions } from './data'
 import { mediumRiskAnswers, highRiskAnswers, lowRiskAnswers } from './__fixtures__/mockAnswers'
+
+// Questions are now passed from the frontend via GraphQL input.
+// For tests, we define the same 13-question dataset inline.
+const questions = [
+  { id: 1, text: 'I would enjoy exploring investment opportunities for my money.', answers: [{ id: 1, text: 'Strongly agree' }, { id: 2, text: 'Tend to agree' }, { id: 3, text: 'In between' }, { id: 4, text: 'Tend to disagree' }, { id: 5, text: 'Strongly disagree' }] },
+  { id: 2, text: 'I would go for the best possible return even if there were risk involved.', answers: [{ id: 1, text: 'Always' }, { id: 2, text: 'Usually' }, { id: 3, text: 'Sometimes' }, { id: 4, text: 'Rarely' }, { id: 5, text: 'Never' }] },
+  { id: 3, text: 'How would you describe your typical attitude when making important financial decisions?', answers: [{ id: 1, text: 'Very adventurous' }, { id: 2, text: 'Fairly adventurous' }, { id: 3, text: 'Average' }, { id: 4, text: 'Fairly cautious' }, { id: 5, text: 'Very cautious' }] },
+  { id: 4, text: 'What amount of risk do you feel you have taken with your past financial decisions?', answers: [{ id: 1, text: 'Very Large' }, { id: 2, text: 'Large' }, { id: 3, text: 'Medium' }, { id: 4, text: 'Small' }, { id: 5, text: 'Very small' }] },
+  { id: 5, text: 'To reach my financial goal I prefer an investment which is safe and grows slowly but steadily, even if it means lower growth overall.', answers: [{ id: 1, text: 'Strongly agree' }, { id: 2, text: 'Tend to agree' }, { id: 3, text: 'In between' }, { id: 4, text: 'Tend to disagree' }, { id: 5, text: 'Strongly disagree' }] },
+  { id: 6, text: 'I am looking for high investment growth. I am willing to accept the possibility of greater losses to achieve this.', answers: [{ id: 1, text: 'Strongly agree' }, { id: 2, text: 'Tend to agree' }, { id: 3, text: 'In between' }, { id: 4, text: 'Tend to disagree' }, { id: 5, text: 'Strongly disagree' }] },
+  { id: 7, text: 'If you had money to invest, how much would you be willing to place in an investment with possible high returns but a similar chance of losing some of your money?', answers: [{ id: 1, text: 'All of it' }, { id: 2, text: 'More than half' }, { id: 3, text: 'Half' }, { id: 4, text: 'Less than half' }, { id: 5, text: 'Very little, if any' }] },
+  { id: 8, text: 'How do you think that a friend who knows you well would describe your attitude to taking financial risks?', answers: [{ id: 1, text: 'Daring' }, { id: 2, text: 'Sometimes daring' }, { id: 3, text: 'A thoughtful risk taker' }, { id: 4, text: 'Careful' }, { id: 5, text: 'Very cautious and risk averse' }] },
+  { id: 9, text: 'If you had picked an investment with potential for large gains but also the risk of large losses how would you feel:', answers: [{ id: 1, text: 'Panicked and very uncomfortable' }, { id: 2, text: 'Quite uneasy' }, { id: 3, text: 'A little concerned' }, { id: 4, text: 'Accepting of the possible highs and lows' }, { id: 5, text: 'Excited by the potential for gain' }] },
+  { id: 10, text: 'Imagine that you have some money to invest and a choice of two investment products, which option would you choose?', answers: [{ id: 1, text: 'Low return, almost no risk' }, { id: 2, text: 'Higher return, some risk' }, { id: 3, text: 'A mixture of the two' }] },
+  { id: 11, text: 'I would prefer small certain gains to large uncertain ones.', answers: [{ id: 1, text: 'Strongly agree' }, { id: 2, text: 'Tend to agree' }, { id: 3, text: 'In between' }, { id: 4, text: 'Tend to disagree' }, { id: 5, text: 'Strongly disagree' }] },
+  { id: 12, text: 'When considering a major financial decision, which statement BEST describes the way you think about the possible losses or the possible gains?', answers: [{ id: 1, text: 'Excited about gains' }, { id: 2, text: 'Optimistic about gains' }, { id: 3, text: 'Think about both' }, { id: 4, text: 'Conscious of losses' }, { id: 5, text: 'Worry about losses' }] },
+  { id: 13, text: 'I want my investment money to be safe even if it means lower returns.', answers: [{ id: 1, text: 'Strongly agree' }, { id: 2, text: 'Tend to agree' }, { id: 3, text: 'In between' }, { id: 4, text: 'Tend to disagree' }, { id: 5, text: 'Strongly disagree' }] },
+]
 
 function renderTemplate(rating: string, answers = mediumRiskAnswers) {
   return compileTemplate({
@@ -28,9 +45,9 @@ describe('compileTemplate', () => {
     const html = renderTemplate('3')
     // Logo should appear in page headers and footers
     expect(html).toContain('viewBox="0 0 995 246"')
-    // At least 3 pages × header + footer = 6 logo instances
+    // Page 1 header + footer = 2, questions section header + footer = 2 → 4 logos
     const logoCount = (html.match(/viewBox="0 0 995 246"/g) || []).length
-    expect(logoCount).toBe(6)
+    expect(logoCount).toBe(4)
   })
 
   it('includes the date', () => {
@@ -133,23 +150,23 @@ describe('compileTemplate', () => {
       expect(html).toContain('question-number')
     })
 
-    it('has empty question list containers for JS to populate', () => {
+    it('has empty question list container for JS to populate', () => {
       const html = renderTemplate('3')
-      expect(html).toContain('class="question-list first-section"')
-      expect(html).toContain('class="question-list second-section"')
+      expect(html).toContain('class="question-list all-questions"')
     })
 
-    it('splits questions at id 7 boundary', () => {
+    it('populates all questions into a single list', () => {
       const html = renderTemplate('3')
-      // The script splits at q.id <= 7 for first section
-      expect(html).toContain('q.id <= 7')
+      expect(html).toContain('.all-questions')
     })
   })
 
   describe('page structure', () => {
-    it('has 3 pages', () => {
-      const pageCount = (renderTemplate('3').match(/class="page"/g) || []).length
-      expect(pageCount).toBe(3)
+    it('has results page with forced page break followed by flowing questions section', () => {
+      const html = renderTemplate('3')
+      // Page 1 is the only fixed page; questions flow naturally
+      const pageCount = (html.match(/class="page"/g) || []).length
+      expect(pageCount).toBe(1)
     })
 
     it('page 1 has results title', () => {
@@ -157,18 +174,10 @@ describe('compileTemplate', () => {
       expect(html).toContain('Attitude to Risk')
     })
 
-    it('pages 2 and 3 show question ranges', () => {
+    it('questions section shows title and subtitle', () => {
       const html = renderTemplate('3')
-      expect(html).toContain('Questions 1')
-      expect(html).toContain('7 of 13')
-      expect(html).toContain('Questions 8')
-      expect(html).toContain('13 of 13')
-    })
-
-    it('includes page numbers in footers', () => {
-      const html = renderTemplate('3')
-      expect(html).toContain('Page 2 of 3')
-      expect(html).toContain('Page 3 of 3')
+      expect(html).toContain('Your Questions &amp; Answers')
+      expect(html).toContain('13 questions')
     })
   })
 

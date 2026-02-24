@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto'
 import chromium from '@sparticuz/chromium'
 import puppeteer from 'puppeteer-core'
-import { questions } from './data'
 import { compileTemplate } from './template'
 import { storeTemplate, storeDocument, getDocumentUrl } from './s3Service'
 
@@ -10,11 +9,21 @@ interface RiskAnswer {
   responseId: number
 }
 
+interface RiskQuestion {
+  questionId: number
+  questionText: string
+  responses: Array<{
+    responseId: number
+    responseText: string
+  }>
+}
+
 interface AppSyncEvent {
   arguments: {
     input: {
       RiskRating: string
       RiskAnswers: RiskAnswer[]
+      RiskQuestions: RiskQuestion[]
     }
   }
 }
@@ -34,7 +43,7 @@ export const handler = async (event: AppSyncEvent) => {
 
   try {
     const uuid = randomUUID()
-    const { RiskRating, RiskAnswers } = event.arguments.input
+    const { RiskRating, RiskAnswers, RiskQuestions } = event.arguments.input
 
     // Validate RiskRating is a known value (prevents HTML injection via unescaped template interpolation)
     if (!['1', '2', '3', '4', '5'].includes(RiskRating)) {
@@ -44,6 +53,20 @@ export const handler = async (event: AppSyncEvent) => {
     if (!Array.isArray(RiskAnswers) || RiskAnswers.length === 0) {
       throw new Error('RiskAnswers must be a non-empty array')
     }
+
+    if (!Array.isArray(RiskQuestions) || RiskQuestions.length === 0) {
+      throw new Error('RiskQuestions must be a non-empty array')
+    }
+
+    // Map input questions to the shape expected by compileTemplate
+    const questions = RiskQuestions.map((q) => ({
+      id: q.questionId,
+      text: q.questionText,
+      answers: q.responses.map((r) => ({
+        id: r.responseId,
+        text: r.responseText,
+      })),
+    }))
 
     // Serialise questions and answers to JSON strings
     const questionsJson = JSON.stringify(questions)
@@ -86,7 +109,7 @@ export const handler = async (event: AppSyncEvent) => {
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
-      margin: { top: '1in', right: '1in', bottom: '1in', left: '1in' },
+      margin: { top: '0.4in', right: '0', bottom: '0.4in', left: '0' },
       printBackground: true,
     })
 
